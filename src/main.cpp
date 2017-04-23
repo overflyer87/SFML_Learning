@@ -19,7 +19,8 @@
 bool handleCollision(sf::RectangleShape*, sf::RectangleShape*, bool);
 
 //Animate player
-sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime);
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount,
+		float switchTime, float* deltaTime);
 
 //==========
 //START MAIN
@@ -33,7 +34,8 @@ int main(int argc, char* argv[]) {
 	sound.setBuffer(soundBuffer);
 
 	//Create the window and renderer all in one
-	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),"My first SFML Game!");
+	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
+			"My first SFML Game!");
 
 	//Textures
 	//Floor
@@ -77,14 +79,15 @@ int main(int argc, char* argv[]) {
 	//Set texture IntRect to select a portion of a sprite if neccessary
 	//If you just have a single figure in the texture file you must multiply by 0 as X and Y offset
 	//Player and NPCs
-	playerShape.setTextureRect(sf::IntRect(playerTextureSize.x * 0, playerTextureSize.y * 0, playerTextureSize.x, playerTextureSize.y));
+	playerShape.setTextureRect(
+			sf::IntRect(playerTextureSize.x * 0, playerTextureSize.y * 0,
+					playerTextureSize.x, playerTextureSize.y));
 
 	//If you have a sprite with more than 1 column or row deal with animation here
 	//Player and NPCs
 	sf::Clock clock;
 	sf::Vector2u playerImageCount(3, 9);
 	float deltaTime = 0.0f;
-
 
 	//Execute texture options if necessary/wanted
 	//Floor
@@ -115,8 +118,10 @@ int main(int argc, char* argv[]) {
 
 	//If wanted create arrays for repeatedly drawing objects
 	//Position will then be set in for loop
-	int elementsFloorArray = std::ceil(((float)WINDOW_WIDTH / floorShape.getSize().x)) + 1;
-	int elementsLavaArray = std::ceil(((float)WINDOW_WIDTH / lavaShape.getSize().y)) + 1;
+	int elementsFloorArray = std::ceil(
+			((float) WINDOW_WIDTH / floorShape.getSize().x)) + 1;
+	int elementsLavaArray = std::ceil(
+			((float) WINDOW_WIDTH / lavaShape.getSize().y)) + 1;
 	sf::RectangleShape floorArray[elementsFloorArray] = { floorShape };
 	sf::RectangleShape lavaArray[elementsLavaArray] = { lavaShape };
 	int floorArrayLength = (sizeof(floorArray) / sizeof(floorArray[0]));
@@ -163,7 +168,9 @@ int main(int argc, char* argv[]) {
 		//We broke out of event loop because the queue is empty for this frame
 
 		//Animate player
-		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, 0.3f, &deltaTime));
+		playerShape.setTextureRect(
+				animate(0, &playerTexture, &playerImageCount, 0.3f,
+						&deltaTime));
 
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
@@ -180,12 +187,17 @@ int main(int argc, char* argv[]) {
 			} else {
 				floorShape.setPosition(((0.0f + 50.0f) * float(i)), 400.0f);
 				window.draw(floorShape);
-				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], false);
+				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape,
+						&floorArray[i - 1], false);
 
 				if (!boxAndFloorCollide) {
-					std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis." << std::endl;
+					std::cout
+							<< "Box should fall into lava here! If this worked I would make it move down the Y axis."
+							<< std::endl;
 				} else {
-					std::cout << "Box collides with floor so should just stand on it" << std::endl;
+					std::cout
+							<< "Box collides with floor so should just stand on it"
+							<< std::endl;
 				}
 			}
 		}
@@ -217,7 +229,8 @@ int main(int argc, char* argv[]) {
 
 //Collision detection: AABB method for two bodies
 //bool push decides whether or not the collision will be resolved by pushing secondBody away
-bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody, bool push) {
+bool handleCollision(sf::RectangleShape* firstBody,
+		sf::RectangleShape* secondBody, bool push) {
 
 	//If the secondBody passed in is NULL return false
 	//Make sure the first body is preferably the player and the secondBody is something static like the floor
@@ -248,7 +261,7 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 				if (deltaX > 0.0f) {
 					firstBody->move(intersectX, 0.0f);
 					secondBody->move(-intersectX, 0.0f);
-				//Else vice versa
+					//Else vice versa
 				} else {
 					firstBody->move(-intersectX, 0.0f);
 					secondBody->move(intersectX, 0.0f);
@@ -261,8 +274,8 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 					firstBody->move(-intersectX, 0.0f);
 				}
 			}
-		//If collision on Y ordinate is bigger than on X handle resolution on Y level
-		//Rest is vice versa described in comments above
+			//If collision on Y ordinate is bigger than on X handle resolution on Y level
+			//Rest is vice versa described in comments above
 		} else {
 			if (push) {
 
@@ -290,7 +303,8 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 }
 
 //Do player animation
-sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime){
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount,
+		float switchTime, float* deltaTime) {
 	float totalTime = 0.0f;
 	sf::Vector2u currentImage;
 	sf::IntRect uvRect;
@@ -302,14 +316,15 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, flo
 	uvRect.width = texture->getSize().x / float(imageCount->x);
 	uvRect.height = texture->getSize().y / float(imageCount->y);
 
-	if(totalTime >= switchTime) {
-		std::cout << "totalTime is bigger than switchTime. Increment tux!" << std::endl;
+	if (totalTime >= switchTime) {
+		std::cout << "totalTime is bigger than switchTime. Increment tux!"
+				<< std::endl;
 		totalTime -= switchTime;
 		currentImage.x++;
-		std::cout << "Incremented tux. Current image is: " << currentImage.x << std::endl;
+		std::cout << "Incremented tux. Current image is: " << currentImage.x
+				<< std::endl;
 
-
-		if(currentImage.x >= imageCount->x) {
+		if (currentImage.x >= imageCount->x) {
 			currentImage.x = 0;
 		}
 	}
@@ -324,11 +339,10 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, flo
 	std::cout << "UV Rect Height: " << uvRect.height << std::endl;
 	std::cout << "UV Rect Left: " << uvRect.left << std::endl;
 	std::cout << "UV Rect Top: " << uvRect.top << std::endl;
-	std::cout << "Image Count X: " << imageCount -> x << std::endl;
-	std::cout << "Image Count Y: " << imageCount -> y << std::endl;
+	std::cout << "Image Count X: " << imageCount->x << std::endl;
+	std::cout << "Image Count Y: " << imageCount->y << std::endl;
 	//END DEBUGGING
 
 	return uvRect;
 }
-
 
