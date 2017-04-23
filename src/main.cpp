@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
 //Function signatures
 
 //Collision detection: AABB method for two bodies
-//bool push decides whether or not if collision will be resolved by pushing secondBody away
+//bool push decides whether or not the collision will be resolved by pushing secondBody away
 bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody, bool push) {
 
 	//If the secondBody passed in is NULL return false
@@ -261,3 +261,4 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 	//Return false if no collision was detected
 	return false;
 }
+
