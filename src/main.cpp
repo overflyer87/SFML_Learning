@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
 				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], false);
 
 				if (!boxAndFloorCollide) {
-					//std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis." << std::endl;
+					std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis." << std::endl;
 				} else {
 					std::cout << "Box collides with floor so should just stand on it" << std::endl;
 				}
@@ -291,7 +291,7 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 
 //Do player animation
 sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime){
-	float totalTime = 0.29999f;
+	float totalTime = 0.0f;
 	sf::Vector2u currentImage;
 	sf::IntRect uvRect;
 
@@ -317,6 +317,7 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, flo
 	uvRect.left = currentImage.x * uvRect.width;
 	uvRect.top = currentImage.y * uvRect.height;
 
+	//START DEBUGGING
 	std::cout << "Current Image X : " << currentImage.x << std::endl;
 	std::cout << "Current Image Y: " << currentImage.y << std::endl;
 	std::cout << "UV Rect Width: " << uvRect.width << std::endl;
@@ -325,7 +326,7 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, flo
 	std::cout << "UV Rect Top: " << uvRect.top << std::endl;
 	std::cout << "Image Count X: " << imageCount -> x << std::endl;
 	std::cout << "Image Count Y: " << imageCount -> y << std::endl;
-
+	//END DEBUGGING
 
 	return uvRect;
 }
