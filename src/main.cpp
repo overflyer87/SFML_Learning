@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 	//Other world objects
 	obstacleBoxShape.setSize(sf::Vector2f(75.0f, 75.0f));
 	obstacleBoxShape.setOrigin(32.5f, 32.5f);
-	obstacleBoxShape.setPosition(600.0f, 335.0f);
+	obstacleBoxShape.setPosition(600.0f, 350.0f);
 
 	lavaShape.setSize(sf::Vector2f(float(WINDOW_WIDTH), 50.0f));
 
@@ -155,9 +155,9 @@ int main(int argc, char* argv[]) {
 			} else {
 				floorShape.setPosition(((0.0f + 50.0f) * float(i)), 400.0f);
 				window.draw(floorShape);
-				handleCollision(&obstacleBoxShape, &floorArray[i - 1], true);
+				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], true);
 
-				if (!(handleCollision(&obstacleBoxShape, &floorArray[i - 1], true))) {
+				if (!boxAndFloorCollide) {
 					std::cout << "Box should fall into lava here!" << std::endl;
 				}
 			}
@@ -207,7 +207,7 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 	//Calculate deltaX and deltaY between the bodies
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
-	//Calculate Intersection by subtraction deltaX/deltaY by summing up the half size of each body
+	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
 	float intersectX = abs(deltaX) - (posSecondHalfSize.x + posFirstHalfSize.x);
 	float intersectY = abs(deltaY) - (posSecondHalfSize.y + posFirstHalfSize.y);
 
@@ -255,10 +255,9 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 				}
 			}
 		}
-		//Return truew if collision was detected
+		//Return true if collision was detected
 		return true;
 	}
 	//Return false if no collision was detected
 	return false;
 }
-
