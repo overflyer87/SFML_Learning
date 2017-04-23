@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
 				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], true);
 
 				if (!boxAndFloorCollide) {
-					std::cout << "Box should fall into lava here!" << std::endl;
+					std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis" << std::endl;
 				}
 			}
 		}
