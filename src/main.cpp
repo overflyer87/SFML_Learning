@@ -17,6 +17,9 @@
 //Function prototypes
 //Collision detection AABB method for two bodies
 bool handleCollision(sf::RectangleShape*, sf::RectangleShape*, bool);
+//Set player properties
+void setPlayerProperties(sf::Vector2f, bool, float, bool);
+sf::IntRect animate(int, sf::Texture*, sf::Vector2u*, float, float*);
 
 //==========
 //START MAIN
@@ -58,7 +61,7 @@ int main(int argc, char* argv[]) {
 	floorShape.setTexture(&floorTexture);
 
 	//Players and NPCs
-	playerTexture.loadFromFile("player.png");
+	playerTexture.loadFromFile("tux_from_linux.png");
 	playerShape.setTexture(&playerTexture);
 
 	//Other world objects
@@ -67,6 +70,21 @@ int main(int argc, char* argv[]) {
 
 	lavaTexture.loadFromFile("lava.png");
 	lavaShape.setTexture(&lavaTexture);
+
+	//Get the size of textures
+	sf::Vector2u playerTextureSize = playerTexture.getSize();
+
+	//Set texture IntRect to select a portion of a sprite if neccessary
+	//If you just have a single figure in the texture file you must multiply by 0 as X and Y offset
+	//Player and NPCs
+	playerShape.setTextureRect(sf::IntRect(playerTextureSize.x * 0, playerTextureSize.y * 0, playerTextureSize.x, playerTextureSize.y));
+
+	//If you have a sprite with more than 1 column or row deal with animation here
+	//Player and NPCs
+	sf::Clock clock;
+	sf::Vector2u playerImageCount(3, 9);
+	float deltaTime = 0.0f;
+
 
 	//Execute texture options if necessary/wanted
 	//Floor
@@ -115,6 +133,9 @@ int main(int argc, char* argv[]) {
 	//=====================
 
 	while (window.isOpen()) {
+
+		deltaTime = clock.restart().asSeconds();
+
 		//Create event for Event loop
 		sf::Event event;
 
@@ -143,6 +164,8 @@ int main(int argc, char* argv[]) {
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
 
+		//Animate player
+		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, 0.3f, &deltaTime));
 		//Draw non-repetitive objects
 		window.draw(playerShape);
 		window.draw(obstacleBoxShape);
@@ -158,7 +181,7 @@ int main(int argc, char* argv[]) {
 				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], false);
 
 				if (!boxAndFloorCollide) {
-					std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis." << std::endl;
+					//std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis." << std::endl;
 				} else {
 					std::cout << "Box collides with floor so should just stand on it" << std::endl;
 				}
@@ -264,3 +287,42 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 	return false;
 }
 
+//Set Player properties
+void setPlayerProperties(sf::Vector2f velocity, bool canJump, float jumpHeight, bool needsAnimation) {
+
+}
+
+//Do player animation
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime) {
+	float totalTime = 0.29999f;
+	sf::Vector2u currentImage;
+	sf::IntRect uvRect;
+
+	currentImage.x = 0;
+	currentImage.y = row;
+	totalTime += *deltaTime;
+
+	std::cout << "Delta time is: " << *deltaTime << std::endl;
+	std::cout << "Total time is: " << totalTime << std::endl;
+	std::cout << "Switch time is: " << switchTime << std::endl;
+
+	uvRect.width = texture->getSize().x / float(imageCount->x);
+	uvRect.height = texture->getSize().y / float(imageCount->y);
+
+	if(totalTime >= switchTime) {
+		std::cout << "totalTime is bigger than switchTime. Increment tux!" << std::endl;
+		totalTime -= switchTime;
+		currentImage.x++;
+		std::cout << "Incremented tux. Current image is: " << currentImage.x << std::endl;
+
+
+		if(currentImage.x >= imageCount->x) {
+			currentImage.x = 0;
+		}
+	}
+
+	uvRect.left = currentImage.x * uvRect.width;
+	uvRect.top = currentImage.y * uvRect.height;
+
+	return uvRect;
+}
