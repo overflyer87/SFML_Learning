@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 	sf::RectangleShape obstacleBoxShape;
 	sf::RectangleShape lavaShape;
 
-	//Tie texture to shape
+	//Tie textures to shapes
 	//Floor
 	floorTexture.loadFromFile("plain_block.png");
 	floorShape.setTexture(&floorTexture);
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 	lavaTexture.setSmooth(true);
 	lavaTexture.setRepeated(true);
 
-	//Position, rotate your readily created object
+	//Optionally position, rotate your readily created object etc.
 	//Floor
 	floorShape.setSize(sf::Vector2f(50.0f, 50.0f));
 	floorShape.setOrigin(0.0f, 25.0f);
@@ -155,10 +155,12 @@ int main(int argc, char* argv[]) {
 			} else {
 				floorShape.setPosition(((0.0f + 50.0f) * float(i)), 400.0f);
 				window.draw(floorShape);
-				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], true);
+				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape, &floorArray[i - 1], false);
 
 				if (!boxAndFloorCollide) {
-					std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis" << std::endl;
+					std::cout << "Box should fall into lava here! If this worked I would make it move down the Y axis." << std::endl;
+				} else {
+					std::cout << "Box collides with floor so should just stand on it" << std::endl;
 				}
 			}
 		}
