@@ -17,9 +17,9 @@
 //Function prototypes
 //Collision detection AABB method for two bodies
 bool handleCollision(sf::RectangleShape*, sf::RectangleShape*, bool);
-//Set player properties
-void setPlayerProperties(sf::Vector2f, bool, float, bool);
-sf::IntRect animate(int, sf::Texture*, sf::Vector2u*, float, float*);
+
+//Animate player
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime);
 
 //==========
 //START MAIN
@@ -161,11 +161,13 @@ int main(int argc, char* argv[]) {
 		}
 
 		//We broke out of event loop because the queue is empty for this frame
-		//Clear the window on each frame, set color to a light sky blue
-		window.clear(sf::Color(176, 226, 255, 100));
 
 		//Animate player
 		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, 0.3f, &deltaTime));
+
+		//Clear the window on each frame, set color to a light sky blue
+		window.clear(sf::Color(176, 226, 255, 100));
+
 		//Draw non-repetitive objects
 		window.draw(playerShape);
 		window.draw(obstacleBoxShape);
@@ -287,13 +289,8 @@ bool handleCollision(sf::RectangleShape* firstBody, sf::RectangleShape* secondBo
 	return false;
 }
 
-//Set Player properties
-void setPlayerProperties(sf::Vector2f velocity, bool canJump, float jumpHeight, bool needsAnimation) {
-
-}
-
 //Do player animation
-sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime) {
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, float switchTime, float* deltaTime){
 	float totalTime = 0.29999f;
 	sf::Vector2u currentImage;
 	sf::IntRect uvRect;
@@ -301,10 +298,6 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, flo
 	currentImage.x = 0;
 	currentImage.y = row;
 	totalTime += *deltaTime;
-
-	std::cout << "Delta time is: " << *deltaTime << std::endl;
-	std::cout << "Total time is: " << totalTime << std::endl;
-	std::cout << "Switch time is: " << switchTime << std::endl;
 
 	uvRect.width = texture->getSize().x / float(imageCount->x);
 	uvRect.height = texture->getSize().y / float(imageCount->y);
@@ -324,5 +317,17 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, flo
 	uvRect.left = currentImage.x * uvRect.width;
 	uvRect.top = currentImage.y * uvRect.height;
 
+	std::cout << "Current Image X : " << currentImage.x << std::endl;
+	std::cout << "Current Image Y: " << currentImage.y << std::endl;
+	std::cout << "UV Rect Width: " << uvRect.width << std::endl;
+	std::cout << "UV Rect Height: " << uvRect.height << std::endl;
+	std::cout << "UV Rect Left: " << uvRect.left << std::endl;
+	std::cout << "UV Rect Top: " << uvRect.top << std::endl;
+	std::cout << "Image Count X: " << imageCount -> x << std::endl;
+	std::cout << "Image Count Y: " << imageCount -> y << std::endl;
+
+
 	return uvRect;
 }
+
+
