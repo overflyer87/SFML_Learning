@@ -9,33 +9,47 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 
-#define MAIN_VIEW_WIDTH 800
-#define MAIN_VIEW_HEIGHT 600
+#define MAIN_VIEW_WIDTH 800.0f
+#define MAIN_VIEW_HEIGHT 600.0f
 
 #define GRAVITY float 981.0f
 
 //Function prototypes
 //Collision detection AABB method for two bodies
-bool handleCollision(sf::RectangleShape*, sf::RectangleShape*, bool);
+//X and Y achsis
+bool handleCollisionXY(sf::RectangleShape*, sf::RectangleShape*, bool);
+//X achsis only
+bool handleCollisionX(sf::RectangleShape*, sf::RectangleShape*, bool);
+//Y achsis only
+bool handleCollisionY(sf::RectangleShape*, sf::RectangleShape*, bool);
+//Touch detection (either X OR Y / Intersection == 0)
+bool detectTouching(sf::RectangleShape*, sf::RectangleShape*);
 
 //Animate player
 sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount,
 		float switchTime, float* deltaTime);
+
+//Handle view resizing
+void resizeView(const sf::RenderWindow*, sf::View*);
 
 //==========
 //START MAIN
 //==========
 
 int main(int argc, char* argv[]) {
+	//Create the window and renderer all in one
+	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
+			"My first SFML Game!");
+
+	//Create a view
+	sf::View view(sf::Vector2f(0.0f, 0.0f),
+			sf::Vector2f(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+
 	//Load Music
 	sf::SoundBuffer soundBuffer;
 	sf::Sound sound;
 	soundBuffer.loadFromFile("bongojam.ogg");
 	sound.setBuffer(soundBuffer);
-
-	//Create the window and renderer all in one
-	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
-			"My first SFML Game!");
 
 	//Textures
 	//Floor
@@ -108,13 +122,13 @@ int main(int argc, char* argv[]) {
 	//Players and NPCs
 	playerShape.setSize(sf::Vector2f(100.0f, 100.0f));
 	playerShape.setOrigin(50.0f, 50.0f);
-	playerShape.setPosition(50.0f, 330.0f);
+	playerShape.setPosition(50.0f, 327.0f);
 	//Other world objects
 	obstacleBoxShape.setSize(sf::Vector2f(75.0f, 75.0f));
 	obstacleBoxShape.setOrigin(32.5f, 32.5f);
-	obstacleBoxShape.setPosition(600.0f, 350.0f);
+	obstacleBoxShape.setPosition(600.0f, 337.5f);
 
-	lavaShape.setSize(sf::Vector2f(float(WINDOW_WIDTH), 50.0f));
+	lavaShape.setSize(sf::Vector2f(float(WINDOW_WIDTH), 150.0f));
 
 	//If wanted create arrays for repeatedly drawing objects
 	//Position will then be set in for loop
@@ -163,6 +177,10 @@ int main(int argc, char* argv[]) {
 				//Pause world music using the 'm' key when sound is playing
 				sound.pause();
 			}
+
+			if (sf::Event::Resized) {
+				resizeView(&window, &view);
+			}
 		}
 
 		//We broke out of event loop because the queue is empty for this frame
@@ -172,8 +190,16 @@ int main(int argc, char* argv[]) {
 				animate(0, &playerTexture, &playerImageCount, 0.3f,
 						&deltaTime));
 
+		view.setCenter(playerShape.getPosition());
+
+		//Collision detection
+		handleCollisionXY(&playerShape, &obstacleBoxShape, true);
+		detectTouching(&playerShape, &floorShape);
+		std::cout << detectTouching(&obstacleBoxShape, &floorShape) << std::endl;
+
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
+		window.setView(view);
 
 		//Draw non-repetitive objects
 		window.draw(playerShape);
@@ -187,32 +213,16 @@ int main(int argc, char* argv[]) {
 			} else {
 				floorShape.setPosition(((0.0f + 50.0f) * float(i)), 400.0f);
 				window.draw(floorShape);
-				bool boxAndFloorCollide = handleCollision(&obstacleBoxShape,
-						&floorArray[i - 1], false);
-
-				if (!boxAndFloorCollide) {
-					std::cout
-							<< "Box should fall into lava here! If this worked I would make it move down the Y axis."
-							<< std::endl;
-				} else {
-					std::cout
-							<< "Box collides with floor so should just stand on it"
-							<< std::endl;
-				}
 			}
 		}
+
 		//Draw the lava under the floor by iterating though lavaShape-array
 		for (int i = 0; i < lavaArrayLength; i++) {
 			lavaShape.setPosition(0.0f, (410.0f + (50.0f * float(i))));
 			window.draw(lavaShape);
 		}
 
-		//Check for and handle collision
-		handleCollision(&playerShape, &floorShape, false);
-		//handleCollisionByStopping(&obstacleBoxShape, &floorShape);
-		handleCollision(&playerShape, &obstacleBoxShape, false);
-
-		//Drawing was done to back buffer. Now switch back and to front buffer directly
+		//Drawing was done to back buffer. Now switch back and to front buffer ijnstantly
 		//This is a common technology nowadays to avoid tearing and jittering
 		window.display();
 	}
@@ -228,28 +238,25 @@ int main(int argc, char* argv[]) {
 //Function signatures
 
 //Collision detection: AABB method for two bodies
+//X and Y achsis
 //bool push decides whether or not the collision will be resolved by pushing secondBody away
-bool handleCollision(sf::RectangleShape* firstBody,
+bool handleCollisionXY(sf::RectangleShape* firstBody,
 		sf::RectangleShape* secondBody, bool push) {
-
-	//If the secondBody passed in is NULL return false
-	//Make sure the first body is preferably the player and the secondBody is something static like the floor
-	if (secondBody == NULL) {
-		return false;
-	}
 
 	//Get the bodies' positions
 	sf::Vector2f posFirstBody = firstBody->getPosition();
 	sf::Vector2f posSecondBody = secondBody->getPosition();
 	//Get half of the size of each body
-	sf::Vector2f posFirstHalfSize = (firstBody->getSize() / 2.0f);
-	sf::Vector2f posSecondHalfSize = (secondBody->getSize() / 2.0f);
+	sf::Vector2f firstBodyHalfSize = (firstBody->getSize() / 2.0f);
+	sf::Vector2f secondBodyHalfSize = (secondBody->getSize() / 2.0f);
 	//Calculate deltaX and deltaY between the bodies
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
-	float intersectX = abs(deltaX) - (posSecondHalfSize.x + posFirstHalfSize.x);
-	float intersectY = abs(deltaY) - (posSecondHalfSize.y + posFirstHalfSize.y);
+	float intersectX = abs(deltaX)
+			- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = abs(deltaY)
+			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
 
 	//If one of the intersection results is negative THERE IS A COLLISION
 	if (intersectX < 0.0f && intersectY < 0.0f) {
@@ -267,7 +274,7 @@ bool handleCollision(sf::RectangleShape* firstBody,
 					secondBody->move(intersectX, 0.0f);
 				}
 				//Else (if push is false) just push back firstBody which effectively results in stopping it
-			} else {
+			} else if (intersectX <= intersectY) {
 				if (deltaX > 0.0f) {
 					firstBody->move(intersectX, 0.0f);
 				} else {
@@ -279,7 +286,7 @@ bool handleCollision(sf::RectangleShape* firstBody,
 		} else {
 			if (push) {
 
-				if (deltaX > 0.0f) {
+				if (deltaY > 0.0f) {
 					firstBody->move(0.0f, intersectX);
 					secondBody->move(0.0f, -intersectX);
 				} else {
@@ -288,18 +295,135 @@ bool handleCollision(sf::RectangleShape* firstBody,
 				}
 			} else {
 
-				if (deltaX > 0.0f) {
+				if (deltaY > 0.0f) {
 					firstBody->move(0.0f, intersectX);
 				} else {
 					firstBody->move(0.0f, -intersectX);
 				}
 			}
 		}
+
 		//Return true if collision was detected
 		return true;
 	}
 	//Return false if no collision was detected
 	return false;
+}
+
+//Collision dectection X achsis only
+bool handleCollisionX(sf::RectangleShape* firstBody,
+		sf::RectangleShape* secondBody, bool push) {
+	//Get the bodies' positions
+	sf::Vector2f posFirstBody = firstBody->getPosition();
+	sf::Vector2f posSecondBody = secondBody->getPosition();
+	//Get half of the size of each body
+	sf::Vector2f firstBodyHalfSize = (firstBody->getSize() / 2.0f);
+	sf::Vector2f secondBodyHalfSize = (secondBody->getSize() / 2.0f);
+	//Calculate deltaX between the bodies
+	float deltaX = posSecondBody.x - posFirstBody.x;
+
+	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX
+	float intersectX = abs(deltaX)
+			- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+
+	if (intersectX < 0.0f) {
+		if (push) {
+			if (deltaX > 0.0f) {
+				firstBody->move(intersectX, 0.0f);
+				secondBody->move(-intersectX, 0.0f);
+			} else {
+				firstBody->move(-intersectX, 0.0f);
+				secondBody->move(intersectX, 0.0f);
+			}
+
+		} else {
+			if (deltaX > 0.0f) {
+				firstBody->move(intersectX, 0.0f);
+			} else {
+				firstBody->move(-intersectX, 0.0f);
+			}
+		}
+		return true;
+	}
+
+	return false;
+}
+
+//Collision detection Y achsis only
+bool handleCollisionY(sf::RectangleShape* firstBody,
+		sf::RectangleShape* secondBody, bool push) {
+	//Get the bodies' positions
+	sf::Vector2f posFirstBody = firstBody->getPosition();
+	sf::Vector2f posSecondBody = secondBody->getPosition();
+	//Get half of the size of each body
+	sf::Vector2f firstBodyHalfSize = (firstBody->getSize() / 2.0f);
+	sf::Vector2f secondBodyHalfSize = (secondBody->getSize() / 2.0f);
+	//Calculate deltaY between the bodies
+	float deltaY = posSecondBody.y - posFirstBody.y;
+
+	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaY
+	float intersectY = abs(deltaY)
+			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
+
+
+	//START DEBUGGING
+	std::cout << "Pos First Body X : " << posFirstBody.x << std::endl;
+	 std::cout << "Pos First Body Y : " << posFirstBody.y << std::endl;
+	 std::cout << "Pos Second Body X : " << posSecondBody.x << std::endl;
+	 std::cout << "Pos Second Body Y : " << posSecondBody.y  << std::endl;
+	 std::cout << "deltaY : " << deltaY << std::endl;
+	 std::cout << "intersectY : " << intersectY << std::endl;
+	//END DEBUGGING
+
+	if (intersectY < 0.0f) {
+		if (push) {
+			if (deltaY > 0.0f) {
+				firstBody->move(0.0f, intersectY);
+				secondBody->move(0.0f, -intersectY);
+			} else {
+				firstBody->move(0.0f, -intersectY);
+				secondBody->move(0.0f, intersectY);
+			}
+
+		} else {
+			if (deltaY > 0.0f) {
+				firstBody->move(0.0f, intersectY);
+			} else {
+				firstBody->move(0.0f, -intersectY);
+			}
+		}
+		return true;
+	}
+
+	return false;
+}
+
+bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody) {
+
+	if(firstBody == NULL || secondBody == NULL) {
+		return false;
+	}
+
+	//Get the bodies' positions
+	sf::Vector2f posFirstBody = firstBody->getPosition();
+	sf::Vector2f posSecondBody = secondBody->getPosition();
+	//Get half of the size of each body
+	sf::Vector2f firstBodyHalfSize = (firstBody->getSize() / 2.0f);
+	sf::Vector2f secondBodyHalfSize = (secondBody->getSize() / 2.0f);
+	//Calculate deltaX and deltaY between the bodies
+	float deltaX = posSecondBody.x - posFirstBody.x;
+	float deltaY = posSecondBody.y - posFirstBody.y;
+	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
+	float intersectX = abs(deltaX)
+			- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = abs(deltaY)
+			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
+
+	if((intersectY <= 0 && intersectY > -2)  || (intersectX <= 0 && intersectY > -2)) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 //Do player animation
@@ -332,17 +456,11 @@ sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount,
 	uvRect.left = currentImage.x * uvRect.width;
 	uvRect.top = currentImage.y * uvRect.height;
 
-	//START DEBUGGING
-	std::cout << "Current Image X : " << currentImage.x << std::endl;
-	std::cout << "Current Image Y: " << currentImage.y << std::endl;
-	std::cout << "UV Rect Width: " << uvRect.width << std::endl;
-	std::cout << "UV Rect Height: " << uvRect.height << std::endl;
-	std::cout << "UV Rect Left: " << uvRect.left << std::endl;
-	std::cout << "UV Rect Top: " << uvRect.top << std::endl;
-	std::cout << "Image Count X: " << imageCount->x << std::endl;
-	std::cout << "Image Count Y: " << imageCount->y << std::endl;
-	//END DEBUGGING
-
 	return uvRect;
 }
 
+//Handle view resizing
+void resizeView(const sf::RenderWindow* window, sf::View* view) {
+	float aspectRatio = float(window->getSize().x) / float(window->getSize().y);
+	view->setSize(MAIN_VIEW_HEIGHT * aspectRatio, MAIN_VIEW_HEIGHT);
+}
