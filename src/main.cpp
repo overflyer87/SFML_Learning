@@ -365,16 +365,6 @@ bool handleCollisionY(sf::RectangleShape* firstBody,
 	float intersectY = abs(deltaY)
 			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
 
-
-	//START DEBUGGING
-	std::cout << "Pos First Body X : " << posFirstBody.x << std::endl;
-	 std::cout << "Pos First Body Y : " << posFirstBody.y << std::endl;
-	 std::cout << "Pos Second Body X : " << posSecondBody.x << std::endl;
-	 std::cout << "Pos Second Body Y : " << posSecondBody.y  << std::endl;
-	 std::cout << "deltaY : " << deltaY << std::endl;
-	 std::cout << "intersectY : " << intersectY << std::endl;
-	//END DEBUGGING
-
 	if (intersectY < 0.0f) {
 		if (push) {
 			if (deltaY > 0.0f) {
@@ -400,10 +390,6 @@ bool handleCollisionY(sf::RectangleShape* firstBody,
 
 bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody) {
 
-	if(firstBody == NULL || secondBody == NULL) {
-		return false;
-	}
-
 	//Get the bodies' positions
 	sf::Vector2f posFirstBody = firstBody->getPosition();
 	sf::Vector2f posSecondBody = secondBody->getPosition();
@@ -414,11 +400,9 @@ bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBod
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
-	float intersectX = abs(deltaX)
-			- (secondBodyHalfSize.x + firstBodyHalfSize.x);
-	float intersectY = abs(deltaY)
-			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
-
+	float intersectX = abs(deltaX)	- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = abs(deltaY)	- (secondBodyHalfSize.y + firstBodyHalfSize.y);
+	
 	if((intersectY <= 0 && intersectY > -2)  || (intersectX <= 0 && intersectY > -2)) {
 		return true;
 	} else {
