@@ -4,6 +4,7 @@
 #include <cmath>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <unistd.h>
 
 //Define constants at compile time
 #define WINDOW_WIDTH 800
@@ -26,8 +27,7 @@ bool handleCollisionY(sf::RectangleShape*, sf::RectangleShape*, bool);
 bool detectTouching(sf::RectangleShape*, sf::RectangleShape*);
 
 //Animate player
-sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount,
-		float switchTime, float* deltaTime);
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, sf::Vector2u*, float switchTime, float* deltaTime);
 
 //Handle view resizing
 void resizeView(const sf::RenderWindow*, sf::View*);
@@ -38,12 +38,24 @@ void resizeView(const sf::RenderWindow*, sf::View*);
 
 int main(int argc, char* argv[]) {
 	//Create the window and renderer all in one
-	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),
-			"My first SFML Game!");
+	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),	"My first SFML Game!");
+
+	//Create fonts
+	sf::Font gameOverFont;
+	gameOverFont.loadFromFile("tahoma.ttf");
+
+	//Create text pieces
+	//Game Over
+	sf::Text gameOver;
+	gameOver.setFont(gameOverFont);
+	gameOver.setString("YOU DID DIED YOU TWAT!");
+	gameOver.setCharacterSize(32);
+	gameOver.setColor(sf::Color::Red);
+	gameOver.setStyle(sf::Text::Bold);
+	gameOver.setPosition(510.0f, 4950.0f);
 
 	//Create a view
-	sf::View view(sf::Vector2f(0.0f, 0.0f),
-			sf::Vector2f(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
+	sf::View view(sf::Vector2f(0.0f, 0.0f),	sf::Vector2f(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
 
 	//Load Music
 	sf::SoundBuffer soundBuffer;
@@ -87,20 +99,11 @@ int main(int argc, char* argv[]) {
 	lavaTexture.loadFromFile("lava.png");
 	lavaShape.setTexture(&lavaTexture);
 
-	//Get the size of textures
-	sf::Vector2u playerTextureSize = playerTexture.getSize();
-
-	//Set texture IntRect to select a portion of a sprite if neccessary
-	//If you just have a single figure in the texture file you must multiply by 0 as X and Y offset
-	//Player and NPCs
-	playerShape.setTextureRect(
-			sf::IntRect(playerTextureSize.x * 0, playerTextureSize.y * 0,
-					playerTextureSize.x, playerTextureSize.y));
-
 	//If you have a sprite with more than 1 column or row deal with animation here
 	//Player and NPCs
 	sf::Clock clock;
 	sf::Vector2u playerImageCount(3, 9);
+	sf::Vector2u playerCurrentImage;
 	float deltaTime = 0.0f;
 
 	//Execute texture options if necessary/wanted
@@ -136,7 +139,8 @@ int main(int argc, char* argv[]) {
 			((float) WINDOW_WIDTH / floorShape.getSize().x)) + 1;
 	int elementsLavaArray = std::ceil(
 			((float) WINDOW_WIDTH / lavaShape.getSize().y)) + 1;
-	sf::RectangleShape floorArray[elementsFloorArray] = { floorShape };
+	sf::RectangleShape dummy;
+	sf::RectangleShape floorArray[elementsFloorArray] = { dummy };
 	sf::RectangleShape lavaArray[elementsLavaArray] = { lavaShape };
 	int floorArrayLength = (sizeof(floorArray) / sizeof(floorArray[0]));
 	int lavaArrayLength = (sizeof(lavaArray) / sizeof(lavaArray[0]));
@@ -151,9 +155,11 @@ int main(int argc, char* argv[]) {
 	//!!!Start Game loop!!!
 	//=====================
 
+	bool isDead = false;
+
 	while (window.isOpen()) {
 
-		deltaTime = clock.restart().asSeconds();
+		deltaTime = clock.getElapsedTime().asSeconds();
 
 		//Create event for Event loop
 		sf::Event event;
@@ -186,16 +192,13 @@ int main(int argc, char* argv[]) {
 		//We broke out of event loop because the queue is empty for this frame
 
 		//Animate player
-		playerShape.setTextureRect(
-				animate(0, &playerTexture, &playerImageCount, 0.3f,
-						&deltaTime));
+		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.05f, &deltaTime));
 
 		view.setCenter(playerShape.getPosition());
 
 		//Collision detection
 		handleCollisionXY(&playerShape, &obstacleBoxShape, true);
 		detectTouching(&playerShape, &floorShape);
-		std::cout << detectTouching(&obstacleBoxShape, &floorShape) << std::endl;
 
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
@@ -207,14 +210,42 @@ int main(int argc, char* argv[]) {
 
 		//Draw repetitive objects
 		//Draw the floor by iterating through floorShape-array
+
+
+
 		for (int i = 0; i < floorArrayLength; i++) {
+
 			if (i == 14) {
 				i++;
 			} else {
+				floorArray[i] = floorShape;
 				floorShape.setPosition(((0.0f + 50.0f) * float(i)), 400.0f);
-				window.draw(floorShape);
+				sf::RectangleShape* curFloorTile = &(floorArray[i]);
+				window.draw(*curFloorTile);
+			}
+
+			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (obstacleBoxShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
+					 obstacleBoxShape.move(0.0f, 0.5f);
+			}
+
+			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (playerShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
+					playerShape.move(0.0f, 0.5f);
+
+				if(playerShape.getPosition().y >= 5000.0f && playerShape.getPosition().y <= 5200.0f) {
+					playerShape.move(0.0f, -0.5f);
+					isDead = true;
+					sound.stop();
+
+					window.clear();
+					window.draw(gameOver);
+					window.display();
+
+					usleep(2000000);
+					window.close();
+				}
 			}
 		}
+
 
 		//Draw the lava under the floor by iterating though lavaShape-array
 		for (int i = 0; i < lavaArrayLength; i++) {
@@ -253,10 +284,8 @@ bool handleCollisionXY(sf::RectangleShape* firstBody,
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
-	float intersectX = abs(deltaX)
-			- (secondBodyHalfSize.x + firstBodyHalfSize.x);
-	float intersectY = abs(deltaY)
-			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
+	float intersectX = abs(deltaX)	- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = abs(deltaY)	- (secondBodyHalfSize.y + firstBodyHalfSize.y);
 
 	//If one of the intersection results is negative THERE IS A COLLISION
 	if (intersectX < 0.0f && intersectY < 0.0f) {
@@ -323,8 +352,7 @@ bool handleCollisionX(sf::RectangleShape* firstBody,
 	float deltaX = posSecondBody.x - posFirstBody.x;
 
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX
-	float intersectX = abs(deltaX)
-			- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectX = abs(deltaX) - (secondBodyHalfSize.x + firstBodyHalfSize.x);
 
 	if (intersectX < 0.0f) {
 		if (push) {
@@ -400,9 +428,9 @@ bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBod
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
-	float intersectX = abs(deltaX)	- (secondBodyHalfSize.x + firstBodyHalfSize.x);
-	float intersectY = abs(deltaY)	- (secondBodyHalfSize.y + firstBodyHalfSize.y);
-	
+	float intersectX = abs(deltaX) - (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = abs(deltaY) - (secondBodyHalfSize.y + firstBodyHalfSize.y);
+
 	if((intersectY <= 0 && intersectY > -2)  || (intersectX <= 0 && intersectY > -2)) {
 		return true;
 	} else {
@@ -411,34 +439,29 @@ bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBod
 }
 
 //Do player animation
-sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount,
-		float switchTime, float* deltaTime) {
-	float totalTime = 0.0f;
-	sf::Vector2u currentImage;
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, sf::Vector2u* currentImage, float switchTime, float* deltaTime) {
+	float totalTime = 0.1f;
 	sf::IntRect uvRect;
 
-	currentImage.x = 0;
-	currentImage.y = row;
+	currentImage->x = 0;
+	currentImage->y = row;
 	totalTime += *deltaTime;
 
 	uvRect.width = texture->getSize().x / float(imageCount->x);
 	uvRect.height = texture->getSize().y / float(imageCount->y);
 
 	if (totalTime >= switchTime) {
-		std::cout << "totalTime is bigger than switchTime. Increment tux!"
-				<< std::endl;
-		totalTime -= switchTime;
-		currentImage.x++;
-		std::cout << "Incremented tux. Current image is: " << currentImage.x
-				<< std::endl;
 
-		if (currentImage.x >= imageCount->x) {
-			currentImage.x = 0;
+		totalTime -= switchTime;
+		currentImage->x++;
+
+		if (currentImage->x >= imageCount->x) {
+			currentImage->x = 0;
 		}
 	}
 
-	uvRect.left = currentImage.x * uvRect.width;
-	uvRect.top = currentImage.y * uvRect.height;
+	uvRect.left = currentImage->x * uvRect.width;
+	uvRect.top = currentImage->y * uvRect.height;
 
 	return uvRect;
 }
