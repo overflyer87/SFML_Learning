@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
 
 	//Create fonts
 	sf::Font gameOverFont;
-	gameOverFont.loadFromFile("tahoma.ttf");
+	gameOverFont.loadFromFile("tahomabd.ttf");
 
 	//Create text pieces
 	//Game Over
@@ -64,6 +64,8 @@ int main(int argc, char* argv[]) {
 	sound.setBuffer(soundBuffer);
 
 	//Textures
+	//Background
+	sf::Texture sunnyDayBgTexture;
 	//Floor
 	sf::Texture floorTexture;
 	//Players and NPCs
@@ -73,6 +75,9 @@ int main(int argc, char* argv[]) {
 	sf::Texture lavaTexture;
 
 	//Shapes
+	//Background
+	sf::RectangleShape sunnyDayBgShape;
+
 	//Floor
 	sf::RectangleShape floorShape;
 
@@ -84,6 +89,9 @@ int main(int argc, char* argv[]) {
 	sf::RectangleShape lavaShape;
 
 	//Tie textures to shapes
+	//Background
+	sunnyDayBgTexture.loadFromFile("sunny_day.png");
+
 	//Floor
 	floorTexture.loadFromFile("plain_block.png");
 	floorShape.setTexture(&floorTexture);
@@ -107,6 +115,8 @@ int main(int argc, char* argv[]) {
 	float deltaTime = 0.0f;
 
 	//Execute texture options if necessary/wanted
+	//Background
+	sunnyDayBgTexture.setSmooth(true);
 	//Floor
 	floorTexture.setSmooth(true);
 	//Players and NPCs
@@ -118,6 +128,10 @@ int main(int argc, char* argv[]) {
 	lavaTexture.setRepeated(true);
 
 	//Optionally position, rotate your readily created object etc.
+	//Background
+	sunnyDayBgShape.setSize(sf::Vector2f(400.0f ,300.0f));
+	sunnyDayBgShape.setOrigin(200.0f ,150.0f);
+
 	//Floor
 	floorShape.setSize(sf::Vector2f(50.0f, 50.0f));
 	floorShape.setOrigin(0.0f, 25.0f);
@@ -192,8 +206,9 @@ int main(int argc, char* argv[]) {
 		//We broke out of event loop because the queue is empty for this frame
 
 		//Animate player
-		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.05f, &deltaTime));
+		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.3f, &deltaTime));
 
+		//Set view center
 		view.setCenter(playerShape.getPosition());
 
 		//Collision detection
@@ -205,6 +220,7 @@ int main(int argc, char* argv[]) {
 		window.setView(view);
 
 		//Draw non-repetitive objects
+		window.draw(sunnyDayBgShape);
 		window.draw(playerShape);
 		window.draw(obstacleBoxShape);
 
@@ -224,12 +240,15 @@ int main(int argc, char* argv[]) {
 				window.draw(*curFloorTile);
 			}
 
+			//If ground was not not drawn make box fall
 			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (obstacleBoxShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
-					 obstacleBoxShape.move(0.0f, 0.5f);
+					 obstacleBoxShape.move(0.0f, 2.0f);
 			}
 
+
+			//If ground was not not drawn make player fall
 			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (playerShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
-					playerShape.move(0.0f, 0.5f);
+					playerShape.move(0.0f, 1.0f);
 
 				if(playerShape.getPosition().y >= 5000.0f && playerShape.getPosition().y <= 5200.0f) {
 					playerShape.move(0.0f, -0.5f);
@@ -253,7 +272,7 @@ int main(int argc, char* argv[]) {
 			window.draw(lavaShape);
 		}
 
-		//Drawing was done to back buffer. Now switch back and to front buffer ijnstantly
+		//Drawing was done to back buffer. Now switch back and to front buffer instantly
 		//This is a common technology nowadays to avoid tearing and jittering
 		window.display();
 	}
@@ -269,7 +288,7 @@ int main(int argc, char* argv[]) {
 //Function signatures
 
 //Collision detection: AABB method for two bodies
-//X and Y achsis
+//X and Y axis
 //bool push decides whether or not the collision will be resolved by pushing secondBody away
 bool handleCollisionXY(sf::RectangleShape* firstBody,
 		sf::RectangleShape* secondBody, bool push) {
@@ -284,8 +303,8 @@ bool handleCollisionXY(sf::RectangleShape* firstBody,
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
-	float intersectX = abs(deltaX)	- (secondBodyHalfSize.x + firstBodyHalfSize.x);
-	float intersectY = abs(deltaY)	- (secondBodyHalfSize.y + firstBodyHalfSize.y);
+	float intersectX = std::abs(deltaX)	- (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = std::abs(deltaY)	- (secondBodyHalfSize.y + firstBodyHalfSize.y);
 
 	//If one of the intersection results is negative THERE IS A COLLISION
 	if (intersectX < 0.0f && intersectY < 0.0f) {
@@ -339,7 +358,7 @@ bool handleCollisionXY(sf::RectangleShape* firstBody,
 	return false;
 }
 
-//Collision dectection X achsis only
+//Collision detection X access only
 bool handleCollisionX(sf::RectangleShape* firstBody,
 		sf::RectangleShape* secondBody, bool push) {
 	//Get the bodies' positions
@@ -352,7 +371,7 @@ bool handleCollisionX(sf::RectangleShape* firstBody,
 	float deltaX = posSecondBody.x - posFirstBody.x;
 
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX
-	float intersectX = abs(deltaX) - (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectX = std::abs(deltaX) - (secondBodyHalfSize.x + firstBodyHalfSize.x);
 
 	if (intersectX < 0.0f) {
 		if (push) {
@@ -377,7 +396,7 @@ bool handleCollisionX(sf::RectangleShape* firstBody,
 	return false;
 }
 
-//Collision detection Y achsis only
+//Collision detection Y access only
 bool handleCollisionY(sf::RectangleShape* firstBody,
 		sf::RectangleShape* secondBody, bool push) {
 	//Get the bodies' positions
@@ -390,7 +409,7 @@ bool handleCollisionY(sf::RectangleShape* firstBody,
 	float deltaY = posSecondBody.y - posFirstBody.y;
 
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaY
-	float intersectY = abs(deltaY)
+	float intersectY = std::abs(deltaY)
 			- (secondBodyHalfSize.y + firstBodyHalfSize.y);
 
 	if (intersectY < 0.0f) {
@@ -428,8 +447,8 @@ bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBod
 	float deltaX = posSecondBody.x - posFirstBody.x;
 	float deltaY = posSecondBody.y - posFirstBody.y;
 	//Calculate intersection by subtracting the sum of the values of the sizes of each body from deltaX/deltaY
-	float intersectX = abs(deltaX) - (secondBodyHalfSize.x + firstBodyHalfSize.x);
-	float intersectY = abs(deltaY) - (secondBodyHalfSize.y + firstBodyHalfSize.y);
+	float intersectX = std::abs(deltaX) - (secondBodyHalfSize.x + firstBodyHalfSize.x);
+	float intersectY = std::abs(deltaY) - (secondBodyHalfSize.y + firstBodyHalfSize.y);
 
 	if((intersectY <= 0 && intersectY > -2)  || (intersectX <= 0 && intersectY > -2)) {
 		return true;
@@ -440,7 +459,8 @@ bool detectTouching(sf::RectangleShape* firstBody, sf::RectangleShape* secondBod
 
 //Do player animation
 sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, sf::Vector2u* currentImage, float switchTime, float* deltaTime) {
-	float totalTime = 0.1f;
+
+	float totalTime = 0.0f;
 	sf::IntRect uvRect;
 
 	currentImage->x = 0;
