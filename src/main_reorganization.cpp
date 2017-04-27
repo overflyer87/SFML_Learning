@@ -41,7 +41,7 @@ bool handleCollisionAABBXY(sf::RectangleShape*, sf::RectangleShape*, bool, int);
 //First chose the rectangle you want from your sprite
 std::tuple<float, float, int> choosePartOfSprite(int row, sf::Texture*, sf::Vector2u, sf::Vector2u);
 //Combine with update mechanism to create animation
-sf::IntRect createAnimation(int, sf::Texture*, sf::Vector2u, sf::Vector2u, float, float);
+sf::IntRect createAnimation(int, sf::Texture*, sf::Vector2u, sf::Vector2u, float, float, bool);
 
 //==========
 //START MAIN
@@ -50,6 +50,7 @@ sf::IntRect createAnimation(int, sf::Texture*, sf::Vector2u, sf::Vector2u, float
 int main(int argc, char* argv[]) {
 	//Create the window and renderer all in one
 	sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT),	"My first SFML Game!");
+	sf::View view(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(MAIN_VIEW_WIDTH, MAIN_VIEW_HEIGHT));
 
 	//Create fonts and text
 	//Game Over Text
@@ -60,7 +61,7 @@ int main(int argc, char* argv[]) {
 	gameOver.setString("GAME OVER");
 	gameOver.setPosition(sf::Vector2f(400.0f, 300.0f));
 	gameOver.setFillColor(sf::Color::Red);
-	sf::Vector2f gameOverTextPos(100.0f, 200.0f);
+	sf::Vector2f gameOverTextPos(window.getPosition().x / 2.0f, window.getPosition().y / 2.0f);
 
 	//Load Music and Sound
 	//Background Music
@@ -130,12 +131,19 @@ int main(int argc, char* argv[]) {
 	sf::Vector2u playerCurrentImage(0, 0);
 	float deltaTime = 0.0f;
 
+	//Set default values before entering game loop
+
 	//Play world music by default
 	sound.play();
 	sound.setPlayingOffset(sf::seconds(2));
 	sound.setLoop(true);
 	sound.setVolume(10);
 	bool playerIsDead = false;
+
+	//Animate player to face right by default
+	playerShape.setTextureRect(createAnimation(0, &playerTexture, playerImageCount, playerCurrentImage, deltaTime, 0.3f, true));
+
+
 	//=====================
 	//!!!Start Game loop!!!
 	//=====================
@@ -156,11 +164,15 @@ int main(int argc, char* argv[]) {
 			}
 
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-				playerShape.move(-10, 0.0f);
+				playerShape.setTextureRect(createAnimation(1, &playerTexture, playerImageCount, playerCurrentImage, deltaTime, 0.3f, false));
+				playerShape.move(sf::Vector2f(-7.0f, 0.0f));
+
 			}
 
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-				playerShape.move(10, 0.0f);
+				playerShape.setTextureRect(createAnimation(1, &playerTexture, playerImageCount, playerCurrentImage, deltaTime, 0.3f, true));
+				playerShape.move(sf::Vector2f(7.0f, 0.0f));
+
 			}
 
 			if (sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
@@ -177,11 +189,9 @@ int main(int argc, char* argv[]) {
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
 
-		//Animate player
-		playerShape.setTextureRect(createAnimation(0, &playerTexture, playerImageCount, playerCurrentImage, deltaTime, 0.3f));
-
-
-		//drawText(&window, &gameOver);
+		//Set view
+		window.setView(view);
+		view.setCenter(sf::Vector2f(playerShape.getPosition().x, playerShape.getPosition().y));
 
 		//Draw non-repetitive objects
 		drawRectangleShape(&window, &playerShape);
@@ -218,6 +228,7 @@ int main(int argc, char* argv[]) {
 			lavaShape.setPosition(0.0f, (410.0f + (50.0f * float(i))));
 			drawRectangleShape(&window, &lavaShape);
 
+			/* COMMENTED SINCE VERY BUGGY, COLLISION HAPPENS AT POSITIONS WHERE THERE IS EVEN NO LAVA
 			if(detectTouchingAABBXY(&lavaShape, &playerShape)) {
 				playerIsDead = true;
 				window.clear();
@@ -227,7 +238,7 @@ int main(int argc, char* argv[]) {
 
 				usleep(2000000);
 				window.close();
-			}
+			}*/
 
 		}
 
@@ -449,7 +460,7 @@ std::tuple<float, float, int> choosePartOfSprite(int row, sf::Texture* texture, 
 }
 
 //Combine with update mechanism to create animation
-sf::IntRect createAnimation(int row, sf::Texture* texture, sf::Vector2u imageCount, sf::Vector2u currentImage, float deltaTime, float switchTime) {
+sf::IntRect createAnimation(int row, sf::Texture* texture, sf::Vector2u imageCount, sf::Vector2u currentImage, float deltaTime, float switchTime, bool faceRight) {
 
 	float totalTime = 0.0f;
 	auto getValuesFromChosenSpriteRect = choosePartOfSprite(row, texture, imageCount, currentImage);
@@ -471,8 +482,17 @@ sf::IntRect createAnimation(int row, sf::Texture* texture, sf::Vector2u imageCou
 
 	uvRect.width = std::get<0>(getValuesFromChosenSpriteRect);
 	uvRect.height = std::get<1>(getValuesFromChosenSpriteRect);
-	uvRect.left = currentImage.x * uvRect.width;
+
 	uvRect.top = currentImage.y * uvRect.height;
+
+
+	if(faceRight) {
+		uvRect.left = currentImage.x * uvRect.width;
+		uvRect.width = std::abs(uvRect.width);
+	} else {
+		uvRect.left = (currentImage.x + 1) * std::abs(uvRect.width);
+		uvRect.width = -std::abs(uvRect.width);
+	}
 
 	return uvRect;
 }
