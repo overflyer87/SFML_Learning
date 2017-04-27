@@ -23,9 +23,6 @@ void drawRectangleShape(sf::RenderWindow*, sf::RectangleShape*);
 //Draw Text
 void drawText(sf::RenderWindow*, sf::Text*);
 
-//Draw rectangle shapes repetitively
-void drawRectangleShapesRep(sf::RenderWindow*, sf::RectangleShape*, sf::Vector2f size, sf::Vector2f origin, float, float, char);
-
 //Unite loading Function and Drawing text in one function
 bool loadFontSetText(sf::Text*, sf::Font*, std::string, std::string, sf::Vector2f*, int, int, int, int, std::string, int);
 
@@ -97,7 +94,7 @@ int main(int argc, char* argv[]) {
 	//Position Box
 	boxShape.setSize(sf::Vector2f(70.0f, 70.0f));
 	boxShape.setOrigin(35.0f, 35.0f);
-	boxShape.setPosition(300.0f, 327.0f);
+	boxShape.setPosition(300.0f, 340.0f);
 
 	//Position floor
 	floorShape.setSize(sf::Vector2f(50.0f, 50.0f));
@@ -106,6 +103,16 @@ int main(int argc, char* argv[]) {
 
 	//Position lava
 	lavaShape.setSize(sf::Vector2f(float(WINDOW_WIDTH), 150.0f));
+
+	//If wanted create arrays for repeatedly drawing objects
+	//Position will then be set in for loop
+	int elementsFloorArray = std::ceil(((float) WINDOW_WIDTH / floorShape.getSize().x)) + 1;
+	int elementsLavaArray = std::ceil(((float) WINDOW_WIDTH / lavaShape.getSize().y)) + 1;
+	sf::RectangleShape dummy;
+	sf::RectangleShape floorArray[elementsFloorArray] = { dummy };
+	sf::RectangleShape lavaArray[elementsLavaArray] = { lavaShape };
+	int floorArrayLength = (sizeof(floorArray) / sizeof(floorArray[0]));
+	int lavaArrayLength = (sizeof(lavaArray) / sizeof(lavaArray[0]));
 
 	//If you have a sprite with more than 1 column or row deal with animation here
 	//Player and NPCs
@@ -120,7 +127,7 @@ int main(int argc, char* argv[]) {
 	sound.setLoop(true);
 	sound.setVolume(10);
 
-
+	bool playerIsDead = false;
 	//=====================
 	//!!!Start Game loop!!!
 	//=====================
@@ -163,15 +170,50 @@ int main(int argc, char* argv[]) {
 
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
-		drawText(&window, &gameOver);
+		//drawText(&window, &gameOver);
 
 		//Draw non-repetitive objects
 		drawRectangleShape(&window, &playerShape);
 		drawRectangleShape(&window, &boxShape);
 
 		//Draw repetitive objects
-		drawRectangleShapesRep(&window, &floorShape, sf::Vector2f(50.0f, 50.0f), sf::Vector2f(50.0f, 25.0f), 400.0f, 0.0f, 'X');
-		drawRectangleShapesRep(&window, &floorShape, sf::Vector2f(float(WINDOW_WIDTH), 50.0f), sf::Vector2f(400.0f, 25.0f), 0.0f, 410.0f, 'Y');
+		//Draw the floor by iterating through floorShape-array
+
+		for (int i = 0; i < floorArrayLength; i++) {
+
+			if (i == 14) {
+				i++;
+			} else {
+				floorArray[i] = floorShape;
+				floorShape.setPosition(((0.0f + 50.0f) * float(i)), 400.0f);
+				sf::RectangleShape* curFloorTile = &(floorArray[i]);
+				drawRectangleShape(&window, &floorShape);
+			}
+
+			//If ground was not not drawn make box fall
+			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (boxShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
+				boxShape.move(0.0f, 0.1f);
+			}
+
+			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (playerShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
+				playerShape.move(0.0f, 0.05f);
+			}
+		}
+
+
+		//Draw the lava under the floor by iterating though lavaShape-array
+		for (int i = 0; i < lavaArrayLength; i++) {
+			sf::RectangleShape* curLavaTile = &(lavaArray[i]);
+			lavaShape.setPosition(0.0f, (410.0f + (50.0f * float(i))));
+			drawRectangleShape(&window, &lavaShape);
+
+			if(detectTouchingAABBXY(&playerShape, &lavaShape) || handleCollisionAABBXY(&playerShape, &lavaShape, false, 2)) {
+				playerIsDead = true;
+				std::cout << playerIsDead << std::endl;
+			}
+
+		}
+
 
 		//Drawing was done to back buffer. Now switch back and to front buffer instantly
 		//This is a common technology nowadays to avoid tearing and jittering
@@ -186,6 +228,7 @@ int main(int argc, char* argv[]) {
 	//==============
 }
 
+
 //Function signatures
 
 //Function prototypes
@@ -199,43 +242,6 @@ void drawText(sf::RenderWindow* window, sf::Text* text) {
 	window->draw(*text);
 }
 
-//Draw rectangle shapes repetitively
-void drawRectangleShapesRep(sf::RenderWindow* window, sf::RectangleShape* rectShape, sf::Vector2f shapeSize, sf::Vector2f shapeOrigin, float posOnFixedAxis, float startPosOnDynamicAxis, char dynamicAxis) {
-
-	int arraySize = 0;
-
-	//Dynamically calculate array elements / size
-	if(dynamicAxis == 'X' || dynamicAxis == 'x') {
-		arraySize = std::ceil(((float) WINDOW_WIDTH / rectShape->getSize().x)) + 1;
-	} else if(dynamicAxis == 'Y' || dynamicAxis == 'y') {
-		arraySize = std::ceil(((float) WINDOW_HEIGHT / rectShape->getSize().y)) + 1;
-	}
-
-	//Create array
-	sf::RectangleShape shapeArray[arraySize] = { *rectShape };
-
-
-	//Start for loop
-	for(int i = 0; i < arraySize; i++) {
-		sf::RectangleShape* currentTile = &(shapeArray[i]);
-		currentTile->setSize(shapeSize);
-		currentTile->setOrigin(shapeOrigin);
-
-		if(dynamicAxis == 'X' || dynamicAxis == 'x') {
-			currentTile->setPosition(((startPosOnDynamicAxis + currentTile->getSize().x) * float(i)), posOnFixedAxis);
-			window->draw(*currentTile);
-		} else if(dynamicAxis == 'Y' || dynamicAxis == 'y') {
-			currentTile->setPosition(posOnFixedAxis, ((startPosOnDynamicAxis + currentTile->getSize().y) * float(i)));
-			window->draw(*currentTile);
-		} else {
-			std::cout << "Choice of char for dynamic axis was wrong. Only X, x, Y and y are allowed" << std::endl;
-		}
-
-	}
-
-}
-
-//Unite loading Function and Drawing text in one function
 bool loadFontSetText(sf::Text* text, sf::Font* font, std::string pathToFont, std::string textPrinted, sf::Vector2f* position, int r, int g, int b, int a, std::string style, int size) {
 
 	if(text == nullptr || font == nullptr || pathToFont == "" || pathToFont == " " || textPrinted == "" || textPrinted == " " || r < 0 || g < 0 || b < 0 || a < 0 || size < 0) {
@@ -356,9 +362,9 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 
 			} else {
 				if (deltaX > 0.0f) {
-					firstBody->move(intersectX, 0.0f);
+					firstBody->move(0.0f, 0.0f);
 				} else {
-					firstBody->move(-intersectX, 0.0f);
+					firstBody->move(0.0f, 0.0f);
 				}
 			}
 			return true;
@@ -379,9 +385,9 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 
 				} else {
 					if (deltaY > 0.0f) {
-						firstBody->move(0.0f, intersectY);
+						firstBody->move(0.0f, 0.0f);
 					} else {
-						firstBody->move(0.0f, -intersectY);
+						firstBody->move(0.0f, 0.0f);
 					}
 				}
 				return true;
@@ -403,8 +409,8 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 						secondBody->move(-intersectX, 0.0f);
 						//Else vice versa
 					} else {
-						firstBody->move(-intersectX, 0.0f);
-						secondBody->move(intersectX, 0.0f);
+						firstBody->move(0.0f, 0.0f);
+						secondBody->move(0.0f, 0.0f);
 					}
 					//Else (if push is false) just push back firstBody which effectively results in stopping it
 				} else if (intersectX <= intersectY) {
@@ -429,9 +435,9 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 				} else {
 
 					if (deltaY > 0.0f) {
-						firstBody->move(0.0f, intersectX);
+						firstBody->move(0.0f, 0.0f);
 					} else {
-						firstBody->move(0.0f, -intersectX);
+						firstBody->move(0.0f, 0.0f);
 					}
 				}
 			}
