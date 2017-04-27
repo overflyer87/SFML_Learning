@@ -24,7 +24,7 @@ void drawRectangleShape(sf::RenderWindow*, sf::RectangleShape*);
 void drawText(sf::RenderWindow*, sf::Text*);
 
 //Draw rectangle shapes repetitively
-void drawRectangleShapesRep(sf::RenderWindow*, sf::RectangleShape*, sf::RectangleShape[], int, char, float);
+void drawRectangleShapesRep(sf::RenderWindow*, sf::RectangleShape*, sf::Vector2f size, sf::Vector2f origin, float, float, char);
 
 //Unite loading Function and Drawing text in one function
 bool loadFontSetText(sf::Text*, sf::Font*, std::string, std::string, sf::Vector2f*, int, int, int, int, std::string, int);
@@ -163,16 +163,15 @@ int main(int argc, char* argv[]) {
 
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
+		drawText(&window, &gameOver);
 
 		//Draw non-repetitive objects
 		drawRectangleShape(&window, &playerShape);
 		drawRectangleShape(&window, &boxShape);
 
 		//Draw repetitive objects
-		sf::RectangleShape floorArray[17] = { floorShape };
-		drawRectangleShapesRep(&window, &floorShape, floorArray, 17, 'X', 400.0f);
-		//sf::RectangleShape lavaArray[4] = { lavaShape };
-		//drawRectangleShapesRep(&window, &lavaShape, lavaArray, 17, 'Y', 0.0f);
+		drawRectangleShapesRep(&window, &floorShape, sf::Vector2f(50.0f, 50.0f), sf::Vector2f(50.0f, 25.0f), 400.0f, 0.0f, 'X');
+		drawRectangleShapesRep(&window, &floorShape, sf::Vector2f(float(WINDOW_WIDTH), 50.0f), sf::Vector2f(400.0f, 25.0f), 0.0f, 410.0f, 'Y');
 
 		//Drawing was done to back buffer. Now switch back and to front buffer instantly
 		//This is a common technology nowadays to avoid tearing and jittering
@@ -201,25 +200,39 @@ void drawText(sf::RenderWindow* window, sf::Text* text) {
 }
 
 //Draw rectangle shapes repetitively
-void drawRectangleShapesRep(sf::RenderWindow* window, sf::RectangleShape* rectShape, sf::RectangleShape shapeArray[], int size, char axis, float otherAxisPos) {
+void drawRectangleShapesRep(sf::RenderWindow* window, sf::RectangleShape* rectShape, sf::Vector2f shapeSize, sf::Vector2f shapeOrigin, float posOnFixedAxis, float startPosOnDynamicAxis, char dynamicAxis) {
 
-	if(axis == 'x' || axis == 'X') {
-		for(int i = 0; i < size; i++) {
-			shapeArray[i].setSize(sf::Vector2f(50.0f, 50.0f));
-			shapeArray[i].setOrigin(sf::Vector2f(25.0f, 25.0f));
-			shapeArray[i].setPosition(((0.0f + (shapeArray[i].getSize().x)) * float(i)), otherAxisPos);
-			window->draw(shapeArray[i]);
-		}
-	} else if(axis == 'y' || axis == 'Y') {
-		for(int i = 0; i < size; i++) {
-			shapeArray[i].setSize(sf::Vector2f(50.0f, 50.0f));
-			shapeArray[i].setOrigin(sf::Vector2f(25.0f, 25.0f));
-			shapeArray[i].setPosition(otherAxisPos, ((0.0f + (shapeArray[i].getSize().y)) * float(i)));
-			window->draw(shapeArray[i]);
-		}
-	} else {
-		std::cout << "Only allowed values for char axis are X, x, Y or y!" << std::endl;
+	int arraySize = 0;
+
+	//Dynamically calculate array elements / size
+	if(dynamicAxis == 'X' || dynamicAxis == 'x') {
+		arraySize = std::ceil(((float) WINDOW_WIDTH / rectShape->getSize().x)) + 1;
+	} else if(dynamicAxis == 'Y' || dynamicAxis == 'y') {
+		arraySize = std::ceil(((float) WINDOW_HEIGHT / rectShape->getSize().y)) + 1;
 	}
+
+	//Create array
+	sf::RectangleShape shapeArray[arraySize] = { *rectShape };
+
+
+	//Start for loop
+	for(int i = 0; i < arraySize; i++) {
+		sf::RectangleShape* currentTile = &(shapeArray[i]);
+		currentTile->setSize(shapeSize);
+		currentTile->setOrigin(shapeOrigin);
+
+		if(dynamicAxis == 'X' || dynamicAxis == 'x') {
+			currentTile->setPosition(((startPosOnDynamicAxis + currentTile->getSize().x) * float(i)), posOnFixedAxis);
+			window->draw(*currentTile);
+		} else if(dynamicAxis == 'Y' || dynamicAxis == 'y') {
+			currentTile->setPosition(posOnFixedAxis, ((startPosOnDynamicAxis + currentTile->getSize().y) * float(i)));
+			window->draw(*currentTile);
+		} else {
+			std::cout << "Choice of char for dynamic axis was wrong. Only X, x, Y and y are allowed" << std::endl;
+		}
+
+	}
+
 }
 
 //Unite loading Function and Drawing text in one function
