@@ -40,6 +40,9 @@ bool detectTouchingAABBXY(sf::RectangleShape*, sf::RectangleShape*);
 //Also takes care of separated X OR Y axis collision
 bool handleCollisionAABBXY(sf::RectangleShape*, sf::RectangleShape*, bool, int);
 
+//Do player animation+
+sf::IntRect animate(int row, sf::Texture*, sf::Vector2u*, sf::Vector2u*, float, float*);
+
 //==========
 //START MAIN
 //==========
@@ -66,24 +69,28 @@ int main(int argc, char* argv[]) {
 	//Create Player
 	sf::RectangleShape playerShape;
 	sf::Texture playerTexture;
-	playerTexture.loadFromFile("player.png");
+	playerTexture.loadFromFile("tux_from_linux.png");
 	playerShape.setTexture(&playerTexture);
+	playerTexture.setSmooth(true);
 	//Create Box
 	sf::RectangleShape boxShape;
 	sf::Texture boxTexture;
 	boxTexture.loadFromFile("box.png");
 	boxShape.setTexture(&boxTexture);
+	boxTexture.setSmooth(true);
 	//Create floor
 	sf::RectangleShape floorShape;
 	sf::Texture floorTexture;
 	floorTexture.loadFromFile("plain_block.png");
 	floorShape.setTexture(&floorTexture);
+	floorTexture.setSmooth(true);
+	floorShape.rotate(180);
 	//Create lava
 	sf::RectangleShape lavaShape;
 	sf::Texture lavaTexture;
 	lavaTexture.loadFromFile("lava.png");
 	lavaShape.setTexture(&lavaTexture);
-
+	lavaTexture.setSmooth(true);
 
 	//Position Objects
 	//Position Player
@@ -99,7 +106,6 @@ int main(int argc, char* argv[]) {
 	//Position floor
 	floorShape.setSize(sf::Vector2f(50.0f, 50.0f));
 	floorShape.setOrigin(0.0f, 25.0f);
-	floorShape.rotate(180);
 
 	//Position lava
 	lavaShape.setSize(sf::Vector2f(float(WINDOW_WIDTH), 150.0f));
@@ -170,6 +176,11 @@ int main(int argc, char* argv[]) {
 
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
+
+		//Animate player
+		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.3f, &deltaTime));
+
+
 		//drawText(&window, &gameOver);
 
 		//Draw non-repetitive objects
@@ -191,11 +202,11 @@ int main(int argc, char* argv[]) {
 			}
 
 			//If ground was not not drawn make box fall
-			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (boxShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
+			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (boxShape.getPosition().x > ((floorArray[i + 1].getPosition().x)) + 5.0f)) {
 				boxShape.move(0.0f, 0.1f);
 			}
 
-			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (playerShape.getPosition().x > floorArray[i + 1].getPosition().x)) {
+			if((floorArray[i].getPosition().x == 0) && (floorArray[i].getPosition().y == 0) && (playerShape.getPosition().x > ((floorArray[i + 1].getPosition().x)) + 5.0f)) {
 				playerShape.move(0.0f, 0.05f);
 			}
 		}
@@ -452,4 +463,33 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 	}
 		//Return false if no collision was detected
 		return false;
+}
+
+//Do player animation
+sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, sf::Vector2u* currentImage, float switchTime, float* deltaTime) {
+
+	float totalTime = 0.0f;
+	sf::IntRect uvRect;
+
+	currentImage->x = 0;
+	currentImage->y = row;
+	totalTime += *deltaTime;
+
+	uvRect.width = texture->getSize().x / float(imageCount->x);
+	uvRect.height = texture->getSize().y / float(imageCount->y);
+
+	if (totalTime >= switchTime) {
+
+		totalTime -= switchTime;
+		currentImage->x++;
+
+		if (currentImage->x >= imageCount->x) {
+			currentImage->x = 0;
+		}
+	}
+
+	uvRect.left = currentImage->x * uvRect.width;
+	uvRect.top = currentImage->y * uvRect.height;
+
+	return uvRect;
 }
