@@ -44,7 +44,7 @@ bool detectTouchingAABBXY(sf::RectangleShape*, sf::RectangleShape*);
 //Collision detection AABB method for two bodies
 //X and Y achsis
 //Also takes care of seperated X OR Y axis collision
-bool handleCollisionAABBXY(sf::RectangleShape*, sf::RectangleShape*, bool);
+bool handleCollisionAABBXY(sf::RectangleShape*, sf::RectangleShape*, bool, int);
 
 //==========
 //START MAIN
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
 		//playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.3f, &deltaTime));
 
 		//Collision detection
-		handleCollisionAABBXY(&playerShape, &boxShape, true);
+		handleCollisionAABBXY(&playerShape, &boxShape, true, 1);
 
 		//Clear the window on each frame, set color to a light sky blue
 		window.clear(sf::Color(176, 226, 255, 100));
@@ -319,7 +319,7 @@ bool detectTouchingAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* sec
 	}
 }
 
-bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody, bool push) {
+bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody, bool push, int axisChoice) {
 	auto touchCalculatedParameters = calculateCollisionParametersAABBXY(firstBody, secondBody);
 
 	float deltaX = std::get<4>(touchCalculatedParameters);
@@ -329,8 +329,12 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 
 		//If one of the intersection results is negative THERE IS A COLLISION
 
-		//First check if there is a collision on the X axis ONLY
-		if (intersectX < 0.0f && intersectY > 0.0f) {
+		//Check if there is a collision on the X axis ONLY if axisChois == 1
+
+	switch(axisChoice) {
+
+	case 1:
+		if (intersectX < 0.0f) {
 			if (push) {
 				if (deltaX > 0.0f) {
 					firstBody->move(intersectX, 0.0f);
@@ -349,9 +353,11 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 			}
 			return true;
 		}
+		break;
 
-		//Second check if there is a collision on the Y axis ONLY
-			if (intersectX > 0.0f && intersectY < 0.0f) {
+		//Check if there is a collision on the Y axis ONLY if axisChoice == 2
+	case 2:
+			if (intersectY < 0.0f) {
 				if (push) {
 					if (deltaY > 0.0f) {
 						firstBody->move(0.0f, intersectY);
@@ -370,9 +376,12 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 				}
 				return true;
 			}
+			break;
 
 
 		//Finally check if the objects collide on BOTH X and Y axis
+
+	case 3:
 		if (intersectX < 0.0f && intersectY < 0.0f) {
 			//If collision on X ordinate is bigger than on Y handle resolution on X level
 			if (intersectX > intersectY) {
@@ -416,11 +425,15 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 					}
 				}
 			}
-
-			//Return true if collision was detected
+				//Return true if collision was detected
 			return true;
 		}
+		break;
+
+	default:
+		std::cout << "The axis choice must be 1,2,3 for X, Y, XY, respectively. Wrong Choice. Will alway return false until fixed!" << std::endl;
+		break;
+	}
 		//Return false if no collision was detected
 		return false;
-
 }
