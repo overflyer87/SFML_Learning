@@ -135,7 +135,6 @@ int main(int argc, char* argv[]) {
 	sound.setPlayingOffset(sf::seconds(2));
 	sound.setLoop(true);
 	sound.setVolume(10);
-
 	bool playerIsDead = false;
 	//=====================
 	//!!!Start Game loop!!!
@@ -144,6 +143,7 @@ int main(int argc, char* argv[]) {
 	while (window.isOpen()) {
 
 		deltaTime = clock.restart().asSeconds();
+		usleep(deltaTime / 1000000);
 
 		//Create event for Event loop
 		sf::Event event;
@@ -471,8 +471,8 @@ sf::IntRect createAnimation(int row, sf::Texture* texture, sf::Vector2u imageCou
 
 	uvRect.width = std::get<0>(getValuesFromChosenSpriteRect);
 	uvRect.height = std::get<1>(getValuesFromChosenSpriteRect);
-	uvRect.left = currentImage.x * std::get<0>(getValuesFromChosenSpriteRect);
-	uvRect.top = currentImage.y * std::get<1>(getValuesFromChosenSpriteRect);
+	uvRect.left = currentImage.x * uvRect.width;
+	uvRect.top = currentImage.y * uvRect.height;
 
 	return uvRect;
 }
