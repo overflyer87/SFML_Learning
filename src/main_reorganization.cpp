@@ -23,9 +23,6 @@ void drawRectangleShape(sf::RenderWindow*, sf::RectangleShape*);
 //Draw Text
 void drawText(sf::RenderWindow*, sf::Text*);
 
-//Unite loading Function and Drawing text in one function
-bool loadFontSetText(sf::Text*, sf::Font*, std::string, std::string, sf::Vector2f*, int, int, int, int, std::string, int);
-
 //Unite sound and soundBuffer loading into one function
 bool setSoundBufferLoadSound(sf::SoundBuffer*, sf::Sound*, std::string);
 
@@ -40,8 +37,11 @@ bool detectTouchingAABBXY(sf::RectangleShape*, sf::RectangleShape*);
 //Also takes care of separated X OR Y axis collision
 bool handleCollisionAABBXY(sf::RectangleShape*, sf::RectangleShape*, bool, int);
 
-//Do player animation+
-sf::IntRect animate(int row, sf::Texture*, sf::Vector2u*, sf::Vector2u*, float, float*);
+//Do player animation
+//First chose the rectangle you want from your sprite
+std::tuple<float, float, int> choosePartOfSprite(int row, sf::Texture*, sf::Vector2u, sf::Vector2u);
+//Combine with update mechanism to create animation
+sf::IntRect createAnimation(int, sf::Texture*, sf::Vector2u, sf::Vector2u, float, float);
 
 //==========
 //START MAIN
@@ -55,9 +55,12 @@ int main(int argc, char* argv[]) {
 	//Game Over Text
 	sf::Font gameOverFont;
 	sf::Text gameOver;
+	gameOverFont.loadFromFile("tahomabd.ttf");
+	gameOver.setFont(gameOverFont);
+	gameOver.setString("GAME OVER");
+	gameOver.setPosition(sf::Vector2f(400.0f, 300.0f));
+	gameOver.setFillColor(sf::Color::Red);
 	sf::Vector2f gameOverTextPos(100.0f, 200.0f);
-
-	std::cout << loadFontSetText(&gameOver, &gameOverFont, "tahomabd.ttf", "Game Over", &gameOverTextPos, 128, 128, 128, 0, "Bold", 64) << std::endl;
 
 	//Load Music and Sound
 	//Background Music
@@ -124,7 +127,7 @@ int main(int argc, char* argv[]) {
 	//Player and NPCs
 	sf::Clock clock;
 	sf::Vector2u playerImageCount(3, 9);
-	sf::Vector2u playerCurrentImage;
+	sf::Vector2u playerCurrentImage(0, 0);
 	float deltaTime = 0.0f;
 
 	//Play world music by default
@@ -140,7 +143,7 @@ int main(int argc, char* argv[]) {
 
 	while (window.isOpen()) {
 
-		deltaTime = clock.getElapsedTime().asSeconds();
+		deltaTime = clock.restart().asSeconds();
 
 		//Create event for Event loop
 		sf::Event event;
@@ -168,9 +171,6 @@ int main(int argc, char* argv[]) {
 		}
 		//We broke out of event loop because the queue is empty for this frame
 
-		//Animate player
-		//playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.3f, &deltaTime));
-
 		//Collision detection
 		handleCollisionAABBXY(&playerShape, &boxShape, true, 1);
 
@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
 		window.clear(sf::Color(176, 226, 255, 100));
 
 		//Animate player
-		playerShape.setTextureRect(animate(0, &playerTexture, &playerImageCount, &playerCurrentImage, 0.3f, &deltaTime));
+		playerShape.setTextureRect(createAnimation(0, &playerTexture, playerImageCount, playerCurrentImage, deltaTime, 0.3f));
 
 
 		//drawText(&window, &gameOver);
@@ -218,13 +218,18 @@ int main(int argc, char* argv[]) {
 			lavaShape.setPosition(0.0f, (410.0f + (50.0f * float(i))));
 			drawRectangleShape(&window, &lavaShape);
 
-			if(detectTouchingAABBXY(&playerShape, &lavaShape) || handleCollisionAABBXY(&playerShape, &lavaShape, false, 2)) {
+			if(detectTouchingAABBXY(&lavaShape, &playerShape)) {
 				playerIsDead = true;
-				std::cout << playerIsDead << std::endl;
+				window.clear();
+				sound.stop();
+				window.draw(gameOver);
+				window.display();
+
+				usleep(2000000);
+				window.close();
 			}
 
 		}
-
 
 		//Drawing was done to back buffer. Now switch back and to front buffer instantly
 		//This is a common technology nowadays to avoid tearing and jittering
@@ -251,43 +256,6 @@ void drawRectangleShape(sf::RenderWindow* window, sf::RectangleShape* rectShape)
 //Draw Text
 void drawText(sf::RenderWindow* window, sf::Text* text) {
 	window->draw(*text);
-}
-
-bool loadFontSetText(sf::Text* text, sf::Font* font, std::string pathToFont, std::string textPrinted, sf::Vector2f* position, int r, int g, int b, int a, std::string style, int size) {
-
-	if(text == nullptr || font == nullptr || pathToFont == "" || pathToFont == " " || textPrinted == "" || textPrinted == " " || r < 0 || g < 0 || b < 0 || a < 0 || size < 0) {
-		std::cout << "One of the arguments was in invalid range. Loading font and drawing text aborted!" << std::endl;
-		return false;
-	}
-
-	std::cout << pathToFont << std::endl;
-
-	//Create font
-	font->loadFromFile(pathToFont);
-
-	//Create text
-	text->setFont(*font);
-	text->setString(textPrinted);
-	text->setCharacterSize(size);
-	text->setPosition(*position);
-	text->setFillColor(sf::Color(r, g, b, a));
-
-	if (style == "Bold") {
-		text->setStyle(sf::Text::Bold);
-	} else if (style == "Italic") {
-		text->setStyle(sf::Text::Italic);
-	} else if (style == "StrikeThrough") {
-		text->setStyle(sf::Text::StrikeThrough);
-	} else if (style == "Underlined") {
-		text->setStyle(sf::Text::Underlined);
-	} else if (style == "Regular") {
-		text->setStyle(sf::Text::Regular);
-	} else {
-		std::cout << "The style color was not valid. In order to not break function: Setting it to Regular!" << std::endl;
-		text->setStyle(sf::Text::Regular);
-	}
-	std::cout << "Font loaded and Text set properly!" << std::endl;
-	return true;
 }
 
 //Unite sound and soundBuffer loading into one function
@@ -466,30 +434,45 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 }
 
 //Do player animation
-sf::IntRect animate(int row, sf::Texture* texture, sf::Vector2u* imageCount, sf::Vector2u* currentImage, float switchTime, float* deltaTime) {
+//First select the rectangle you want from your sprite
+std::tuple<float, float, int> choosePartOfSprite(int row, sf::Texture* texture, sf::Vector2u imageCount, sf::Vector2u currentImage) {
 
-	float totalTime = 0.0f;
 	sf::IntRect uvRect;
 
-	currentImage->x = 0;
-	currentImage->y = row;
-	totalTime += *deltaTime;
+	currentImage.x = 0;
+	currentImage.y = row;
 
-	uvRect.width = texture->getSize().x / float(imageCount->x);
-	uvRect.height = texture->getSize().y / float(imageCount->y);
+	uvRect.width = texture->getSize().x / float(imageCount.x);
+	uvRect.height = texture->getSize().y / float(imageCount.y);
 
-	if (totalTime >= switchTime) {
+	return std::make_tuple(uvRect.width, uvRect.height, row);
+}
 
+//Combine with update mechanism to create animation
+sf::IntRect createAnimation(int row, sf::Texture* texture, sf::Vector2u imageCount, sf::Vector2u currentImage, float deltaTime, float switchTime) {
+
+	float totalTime = 0.0f;
+	auto getValuesFromChosenSpriteRect = choosePartOfSprite(row, texture, imageCount, currentImage);
+
+	currentImage.y = std::get<2>(getValuesFromChosenSpriteRect);
+	currentImage.x = 0;
+	totalTime += deltaTime;
+
+	if(totalTime >= switchTime) {
 		totalTime -= switchTime;
-		currentImage->x++;
+		currentImage.x++;
 
-		if (currentImage->x >= imageCount->x) {
-			currentImage->x = 0;
+		if(currentImage.x >= imageCount.x) {
+			currentImage.x = 0;
 		}
 	}
 
-	uvRect.left = currentImage->x * uvRect.width;
-	uvRect.top = currentImage->y * uvRect.height;
+	sf::IntRect uvRect;
+
+	uvRect.width = std::get<0>(getValuesFromChosenSpriteRect);
+	uvRect.height = std::get<1>(getValuesFromChosenSpriteRect);
+	uvRect.left = currentImage.x * std::get<0>(getValuesFromChosenSpriteRect);
+	uvRect.top = currentImage.y * std::get<1>(getValuesFromChosenSpriteRect);
 
 	return uvRect;
 }
