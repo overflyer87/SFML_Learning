@@ -1,4 +1,4 @@
-//In1cludes
+//Includes
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
@@ -32,9 +32,6 @@ bool loadFontSetText(sf::Text*, sf::Font*, std::string, std::string, sf::Vector2
 //Unite sound and soundBuffer loading into one function
 bool setSoundBufferLoadSound(sf::SoundBuffer*, sf::Sound*, std::string);
 
-//Unite creating rectShape, binding texture, setting texture, drawing shape in one function
-std::tuple<sf::RectangleShape, sf::Texture>createRectShapeWithTexture(std::string);
-
 //Function that calculates all parameters needed for Collision detection or Touching detection
 std::tuple<sf::Vector2f, sf::Vector2f, sf::Vector2f, sf::Vector2f, float, float, float, float> calculateCollisionParametersAABBXY(sf::RectangleShape*, sf::RectangleShape*);
 
@@ -42,8 +39,8 @@ std::tuple<sf::Vector2f, sf::Vector2f, sf::Vector2f, sf::Vector2f, float, float,
 bool detectTouchingAABBXY(sf::RectangleShape*, sf::RectangleShape*);
 
 //Collision detection AABB method for two bodies
-//X and Y achsis
-//Also takes care of seperated X OR Y axis collision
+//X and Y axis
+//Also takes care of separated X OR Y axis collision
 bool handleCollisionAABBXY(sf::RectangleShape*, sf::RectangleShape*, bool, int);
 
 //==========
@@ -70,21 +67,25 @@ int main(int argc, char* argv[]) {
 
 	//Create world objects
 	//Create Player
-	auto getPlayShapeAndTexture = createRectShapeWithTexture("player.png");
-	sf::RectangleShape playerShape = std::get<0>(getPlayShapeAndTexture);
-	sf::Texture playerTexture = std::get<1>(getPlayShapeAndTexture);
+	sf::RectangleShape playerShape;
+	sf::Texture playerTexture;
+	playerTexture.loadFromFile("player.png");
+	playerShape.setTexture(&playerTexture);
 	//Create Box
-	auto getBoxShapeAndTexture = createRectShapeWithTexture("box.png");
-	sf::RectangleShape boxShape = std::get<0>(getBoxShapeAndTexture);
-	sf::Texture boxTexture = std::get<1>(getBoxShapeAndTexture);
+	sf::RectangleShape boxShape;
+	sf::Texture boxTexture;
+	boxTexture.loadFromFile("box.png");
+	boxShape.setTexture(&boxTexture);
 	//Create floor
-	auto getFloorShapeAndTexture = createRectShapeWithTexture("box.png");
-	sf::RectangleShape floorShape = std::get<0>(getFloorShapeAndTexture);
-	sf::Texture floorTexture = std::get<1>(getFloorShapeAndTexture);
+	sf::RectangleShape floorShape;
+	sf::Texture floorTexture;
+	floorTexture.loadFromFile("plain_block.png");
+	floorShape.setTexture(&floorTexture);
 	//Create lava
-	auto getLavaShapeAndTexture = createRectShapeWithTexture("lava.png");
-	sf::RectangleShape lavaShape = std::get<0>(getLavaShapeAndTexture);
-	sf::Texture lavaTexture = std::get<1>(getLavaShapeAndTexture);
+	sf::RectangleShape lavaShape;
+	sf::Texture lavaTexture;
+	lavaTexture.loadFromFile("lava.png");
+	lavaShape.setTexture(&lavaTexture);
 
 
 	//Position Objects
@@ -170,8 +171,8 @@ int main(int argc, char* argv[]) {
 		//Draw repetitive objects
 		sf::RectangleShape floorArray[17] = { floorShape };
 		drawRectangleShapesRep(&window, &floorShape, floorArray, 17, 'X', 400.0f);
-		sf::RectangleShape lavaArray[4] = { lavaShape };
-		drawRectangleShapesRep(&window, &lavaShape, lavaArray, 17, 'Y', 0.0f);
+		//sf::RectangleShape lavaArray[4] = { lavaShape };
+		//drawRectangleShapesRep(&window, &lavaShape, lavaArray, 17, 'Y', 0.0f);
 
 		//Drawing was done to back buffer. Now switch back and to front buffer instantly
 		//This is a common technology nowadays to avoid tearing and jittering
@@ -225,7 +226,7 @@ void drawRectangleShapesRep(sf::RenderWindow* window, sf::RectangleShape* rectSh
 bool loadFontSetText(sf::Text* text, sf::Font* font, std::string pathToFont, std::string textPrinted, sf::Vector2f* position, int r, int g, int b, int a, std::string style, int size) {
 
 	if(text == nullptr || font == nullptr || pathToFont == "" || pathToFont == " " || textPrinted == "" || textPrinted == " " || r < 0 || g < 0 || b < 0 || a < 0 || size < 0) {
-		std::cout << "One of the arguments was in invalig range. Loading font and drawing text aborted!" << std::endl;
+		std::cout << "One of the arguments was in invalid range. Loading font and drawing text aborted!" << std::endl;
 		return false;
 	}
 
@@ -239,7 +240,7 @@ bool loadFontSetText(sf::Text* text, sf::Font* font, std::string pathToFont, std
 	text->setString(textPrinted);
 	text->setCharacterSize(size);
 	text->setPosition(*position);
-	text->setColor(sf::Color(r, g, b, a));
+	text->setFillColor(sf::Color(r, g, b, a));
 
 	if (style == "Bold") {
 		text->setStyle(sf::Text::Bold);
@@ -252,7 +253,7 @@ bool loadFontSetText(sf::Text* text, sf::Font* font, std::string pathToFont, std
 	} else if (style == "Regular") {
 		text->setStyle(sf::Text::Regular);
 	} else {
-		std::cout << "The style color was not valid. In order to not break function setting it to Regular!" << std::endl;
+		std::cout << "The style color was not valid. In order to not break function: Setting it to Regular!" << std::endl;
 		text->setStyle(sf::Text::Regular);
 	}
 	std::cout << "Font loaded and Text set properly!" << std::endl;
@@ -273,15 +274,6 @@ bool setSoundBufferLoadSound(sf::SoundBuffer* soundBuffer, sf::Sound* sound, std
 	std::cout << "Sound buffer created and sound loaded properly." << std::endl;
 
 	return true;
-}
-
-std::tuple<sf::RectangleShape, sf::Texture>createRectShapeWithTexture(std::string pathToTexture) {
-	sf::Texture texture;
-	texture.loadFromFile(pathToTexture);
-	sf::RectangleShape rectShape;
-	rectShape.setTexture(&texture);
-
-	return std::make_tuple(rectShape, texture);
 }
 
 std::tuple<sf::Vector2f, sf::Vector2f, sf::Vector2f, sf::Vector2f, float, float, float, float> calculateCollisionParametersAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody) {
@@ -318,6 +310,11 @@ bool detectTouchingAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* sec
 		return false;
 	}
 }
+
+//Handle collision according to AABB theorem
+//Axis choice: 1 for x coordinate ONLY handling
+//Axis choice: 2 for Y coordinate ONLY handling
+//Axis choice: 3 for X and Y coordinate handling
 
 bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* secondBody, bool push, int axisChoice) {
 	auto touchCalculatedParameters = calculateCollisionParametersAABBXY(firstBody, secondBody);
@@ -431,7 +428,7 @@ bool handleCollisionAABBXY(sf::RectangleShape* firstBody, sf::RectangleShape* se
 		break;
 
 	default:
-		std::cout << "The axis choice must be 1,2,3 for X, Y, XY, respectively. Wrong Choice. Will alway return false until fixed!" << std::endl;
+		std::cout << "The axis choice must be 1,2,3 for X, Y, XY, respectively. Wrong Choice. Will always return false until fixed!" << std::endl;
 		break;
 	}
 		//Return false if no collision was detected
